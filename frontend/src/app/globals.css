@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0B0D0C;
+  --foreground: #F5F3ED;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Custom scrollbars for data tables and panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0B0D0C;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262C26;
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C99A55;
+}
+
+/* Subtle glow effects & typography */
+.gold-gradient-text {
+  background: linear-gradient(135deg, #F5F3ED 0%, #E2B873 50%, #C99A55 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-border-glow {
+  border: 1px solid rgba(201, 154, 85, 0.25);
+  box-shadow: 0 0 20px -5px rgba(201, 154, 85, 0.12);
+}
+
+.glass-panel {
+  background: rgba(25, 29, 25, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(38, 44, 38, 0.8);
+}
+
+/* Ambient Slow Drifting Glow Animation */
+@keyframes ambientDrift {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+    opacity: 0.12;
+  }
+  50% {
+    transform: translate(30px, -20px) scale(1.08);
+    opacity: 0.18;
+  }
+}
+
+.animate-ambient-drift {
+  animation: ambientDrift 16s ease-in-out infinite;
+}
+
+/* Gentle Status Pulse (Soft breathing, non-distracting) */
+@keyframes softBreath {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.96);
+  }
+}
+
+.animate-soft-breath {
+  animation: softBreath 3s ease-in-out infinite;
+}
+
+/* Floating subtle decorative particles */
+@keyframes floatParticle {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(4deg);
+  }
+}
+
+.animate-float-slow {
+  animation: floatParticle 8s ease-in-out infinite;
+}
+
+/* Subdued border shimmer on hover */
+@keyframes borderShimmer {
+  0% {
+    border-color: rgba(38, 44, 38, 0.8);
+  }
+  50% {
+    border-color: rgba(201, 154, 85, 0.4);
+  }
+  100% {
+    border-color: rgba(38, 44, 38, 0.8);
+  }
+}
+
+/* Accessibility: Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,5 @@
+Minimum_Group_Size,State_Eligible_Records,State_Excluded_Records,State_Candidates,State_Candidate_Rate,Category_Eligible_Records,Category_Excluded_Records,Category_Candidates,Category_Candidate_Rate
+20,38903,97,1945,5.0,38996,4,1966,5.04
+30,38787,213,1936,4.99,38996,4,1966,5.04
+50,38680,320,1929,4.99,38996,4,1966,5.04
+100,38594,406,1925,4.99,38946,54,1963,5.04

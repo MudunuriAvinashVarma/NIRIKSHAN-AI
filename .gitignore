@@ -1,0 +1,54 @@
+﻿# Python environment
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# SQLite databases
+instance/
+*.sqlite3
+*.db
+
+# Testing and caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Frontend dependencies and builds
+node_modules/
+.next/
+out/
+dist/
+
+# Temporary authentication review files
+auth_review/
+
+# Temporary security patch review files
+protect_review/
+
+# Python environment and cache
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Local databases
+*.sqlite
+*.sqlite3
+*.db
+
+# Logs and temporary files
+*.log
+.DS_Store
+Thumbs.db

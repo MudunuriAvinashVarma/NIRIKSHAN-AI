@@ -1,0 +1,255 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import {
+  Database,
+  Mail,
+  Lock,
+  User as UserIcon,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  ShieldAlert,
+  Loader2,
+  CheckCircle2,
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function RegisterForm() {
+  const { register, isLoading } = useAuth();
+  const router = useRouter();
+
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    // Validation
+    if (!fullName || fullName.trim().length < 3) {
+      setErrorMsg("Please enter your complete full name.");
+      return;
+    }
+
+    if (!email || !email.includes("@")) {
+      setErrorMsg("Please enter a valid official or institutional email address.");
+      return;
+    }
+
+    if (!password || password.length < 8) {
+      setErrorMsg("Password must contain at least 8 characters.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMsg("Passwords do not match. Please re-enter.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const result = await register({
+      full_name: fullName,
+      email,
+      password,
+    });
+    setIsSubmitting(false);
+
+    if (result.success) {
+      setSuccessMsg("Clearance request registered successfully! Redirecting to login...");
+      setTimeout(() => {
+        router.push("/login");
+      }, 1800);
+    } else {
+      setErrorMsg(result.error || "Registration could not be completed.");
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 25, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      className="w-full max-w-md mx-auto"
+    >
+      <div className="relative rounded-3xl bg-brand-card/80 backdrop-blur-xl border border-brand-border hover:border-brand-gold/40 shadow-2xl p-8 sm:p-10 space-y-6 transition-all duration-300">
+        
+        {/* Subtle Ambient Card Glow */}
+        <div className="absolute -top-16 -right-16 w-36 h-36 bg-brand-gold/10 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Brand & Heading */}
+        <div className="text-center space-y-2">
+          <Link href="/" className="inline-flex items-center gap-2 group mb-1">
+            <div className="w-10 h-10 rounded-xl bg-brand-surface border border-brand-gold/30 flex items-center justify-center text-brand-gold group-hover:border-brand-gold transition-colors shadow-goldGlow">
+              <Database className="w-5 h-5 text-brand-gold" />
+            </div>
+            <div className="flex items-center gap-1.5 text-left">
+              <span className="font-bold text-lg tracking-wider text-brand-text">NIRIKSHAN</span>
+              <span className="text-xs px-1.5 py-0.5 rounded font-mono font-semibold bg-brand-gold/15 text-brand-goldLight border border-brand-gold/30">
+                AI
+              </span>
+            </div>
+          </Link>
+          
+          <h2 className="text-2xl font-extrabold text-brand-text tracking-tight">
+            Institutional Registration
+          </h2>
+          <p className="text-xs text-brand-muted leading-relaxed">
+            Register your auditor or policy analyst profile for public fund oversight access.
+          </p>
+        </div>
+
+        {/* Success Notice */}
+        {successMsg && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="p-3.5 rounded-xl bg-brand-success/10 border border-brand-success/30 text-xs text-brand-success flex items-start gap-2.5 leading-relaxed"
+          >
+            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{successMsg}</span>
+          </motion.div>
+        )}
+
+        {/* Error Notice */}
+        {errorMsg && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="p-3.5 rounded-xl bg-brand-critical/10 border border-brand-critical/30 text-xs text-brand-critical flex items-start gap-2.5 leading-relaxed"
+          >
+            <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{errorMsg}</span>
+          </motion.div>
+        )}
+
+        {/* Registration Form */}
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          
+          {/* Full Name */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-mono text-brand-muted uppercase">
+              Full Name
+            </label>
+            <div className="relative">
+              <UserIcon className="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Dr. Rajesh Varma"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-brand-surface/90 border border-brand-border text-brand-text placeholder-brand-muted/50 text-xs focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold/40 transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Email Field */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-mono text-brand-muted uppercase">
+              Official Email Address
+            </label>
+            <div className="relative">
+              <Mail className="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="rajesh.varma@cag.gov.in"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-brand-surface/90 border border-brand-border text-brand-text placeholder-brand-muted/50 text-xs focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold/40 transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Password Field */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-mono text-brand-muted uppercase">
+              Password (Min 8 Characters)
+            </label>
+            <div className="relative">
+              <Lock className="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••••••"
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-brand-surface/90 border border-brand-border text-brand-text placeholder-brand-muted/50 text-xs focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold/40 transition-all font-mono"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="p-1.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-text transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Confirm Password Field */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-mono text-brand-muted uppercase">
+              Confirm Password
+            </label>
+            <div className="relative">
+              <Lock className="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••••••"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-brand-surface/90 border border-brand-border text-brand-text placeholder-brand-muted/50 text-xs focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold/40 transition-all font-mono"
+              />
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            type="submit"
+            disabled={isSubmitting || isLoading}
+            className="w-full py-3 rounded-xl bg-brand-gold hover:bg-brand-goldLight text-brand-bg font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-goldGlow flex items-center justify-center gap-2 disabled:opacity-60 mt-3"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-brand-bg" />
+                <span>Registering Account...</span>
+              </>
+            ) : (
+              <>
+                <span>Create Institutional Account</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            )}
+          </motion.button>
+        </form>
+
+        {/* Link back to Login */}
+        <div className="pt-4 border-t border-brand-border/60 text-center text-xs text-brand-muted">
+          <span>Already hold clearance? </span>
+          <Link
+            href="/login"
+            className="text-brand-gold hover:text-brand-goldLight font-semibold underline underline-offset-4 transition-colors"
+          >
+            Sign In Here
+          </Link>
+        </div>
+
+      </div>
+    </motion.div>
+  );
+}
+
