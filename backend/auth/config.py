@@ -35,6 +35,7 @@ DEFAULT_ORIGINS = ("http://localhost:3000", "http://127.0.0.1:3000")
 class AuthSettings:
     environment: str = "development"          # development | test | production
     db_path: Path = DEFAULT_DB_PATH
+    database_url: str = ""                    # PostgreSQL DSN; empty = use SQLite
     cors_origins: tuple[str, ...] = DEFAULT_ORIGINS
     cookie_name: str = "access_token"          # name required by AUTH_CONTRACT.md
     cookie_secure: bool = False
@@ -70,6 +71,7 @@ class AuthSettings:
         return cls(
             environment=environment,
             db_path=Path(os.getenv("NIRIKSHAN_DB_PATH", str(DEFAULT_DB_PATH))),
+            database_url=os.getenv("NIRIKSHAN_DATABASE_URL", "").strip(),
             cors_origins=origins,
             cookie_secure=_env_bool("NIRIKSHAN_COOKIE_SECURE", default=(environment == "production")),
             cookie_samesite=os.getenv("NIRIKSHAN_COOKIE_SAMESITE", "lax").strip().lower(),

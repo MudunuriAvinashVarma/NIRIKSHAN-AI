@@ -48,6 +48,7 @@ def logged_in(registered):
 
 
 def db_rows(auth_settings, sql, params=()):
+    """Direct SQLite query for test assertions (tests always use SQLite)."""
     conn = sqlite3.connect(auth_settings.db_path)
     conn.row_factory = sqlite3.Row
     try:
@@ -404,3 +405,175 @@ def test_anomaly_validation_errors_keep_fastapi_default_format(logged_in):
     response = logged_in.get("/api/v1/anomalies", params={"limit": 0})
     assert response.status_code == 422
     assert isinstance(response.json()["detail"], list)  # unchanged outside /auth
+
+
+# --------------------------------------------- dual-backend awareness tests
+def test_sqlite_using_path(tmp_path, monkeypatch):
+    """Legacy Path argument selects SQLite when NIRIKSHAN_DATABASE_URL is unset."""
+    monkeypatch.delenv("NIRIKSHAN_DATABASE_URL", raising=False)
+    from backend.auth.database import connect, ensure_db, is_postgres
+
+    db_file = tmp_path / "via_path.sqlite3"
+    assert not is_postgres(db_file)
+    ensure_db(db_file)
+    assert db_file.exists()
+    conn = connect(db_file)
+    try:
+        assert conn.backend == "sqlite"
+    finally:
+        conn.close()
+
+
+def test_sqlite_using_auth_settings(tmp_path, monkeypatch):
+    """AuthSettings with empty database_url uses SQLite at db_path, ignoring env var."""
+    monkeypatch.setenv("NIRIKSHAN_DATABASE_URL", "postgresql://ignored:ignored@localhost/ignored")
+    from backend.auth.database import connect, ensure_db, is_postgres
+
+    db_file = tmp_path / "via_settings.sqlite3"
+    settings = AuthSettings(environment="test", db_path=db_file, database_url="")
+    assert not is_postgres(settings)
+    ensure_db(settings)
+    assert db_file.exists()
+    conn = connect(settings)
+    try:
+        assert conn.backend == "sqlite"
+    finally:
+        conn.close()
+
+
+def test_postgres_selection_using_auth_settings_database_url(tmp_path, monkeypatch):
+    """AuthSettings.database_url selects PostgreSQL even without NIRIKSHAN_DATABASE_URL."""
+    monkeypatch.delenv("NIRIKSHAN_DATABASE_URL", raising=False)
+    import psycopg
+    from backend.auth import database as db_module
+
+    monkeypatch.setattr(db_module, "_pg_initialised", set())
+    calls = []
+
+    class DummyConn:
+        def execute(self, sql):
+            calls.append(("execute", sql))
+
+        def cursor(self):
+            return self
+
+        def commit(self):
+            pass
+
+        def rollback(self):
+            pass
+
+        def close(self):
+            calls.append(("close", None))
+
+    def fake_connect(dsn, **kwargs):
+        calls.append(("connect", dsn, kwargs))
+        return DummyConn()
+
+    monkeypatch.setattr(psycopg, "connect", fake_connect)
+
+    dsn = "postgresql://settings-user:secret@db.example:5432/nirikshan"
+    settings = AuthSettings(environment="test", db_path=tmp_path / "unused.sqlite3", database_url=dsn)
+    assert db_module.is_postgres(settings)
+
+    db_module.ensure_db(settings)
+    conn = db_module.connect(settings)
+    try:
+        assert conn.backend == "postgres"
+    finally:
+        conn.close()
+
+    assert not (tmp_path / "unused.sqlite3").exists()
+    connect_calls = [c for c in calls if c[0] == "connect"]
+    assert len(connect_calls) == 2  # once in _ensure_postgres, once in _connect_postgres
+    assert all(c[1] == dsn for c in connect_calls)
+
+
+def test_postgres_selection_using_env_var(tmp_path, monkeypatch):
+    """NIRIKSHAN_DATABASE_URL selects PostgreSQL for legacy Path calls and AuthSettings.from_env()."""
+    dsn = "postgresql://env-user:secret@db.example:6543/postgres"
+    monkeypatch.setenv("NIRIKSHAN_DATABASE_URL", dsn)
+    import psycopg
+    from backend.auth import database as db_module
+
+    monkeypatch.setattr(db_module, "_pg_initialised", set())
+    connect_dsns = []
+
+    class DummyConn:
+        def execute(self, sql):
+            pass
+
+        def close(self):
+            pass
+
+    def fake_connect(conn_dsn, **kwargs):
+        connect_dsns.append(conn_dsn)
+        return DummyConn()
+
+    monkeypatch.setattr(psycopg, "connect", fake_connect)
+
+    legacy_path = tmp_path / "unused_legacy.sqlite3"
+    assert db_module.is_postgres()
+    assert db_module.is_postgres(legacy_path)
+
+    db_module.ensure_db(legacy_path)
+    conn = db_module.connect(legacy_path)
+    try:
+        assert conn.backend == "postgres"
+    finally:
+        conn.close()
+
+    assert not legacy_path.exists()
+    assert connect_dsns == [dsn, dsn]
+    assert AuthSettings.from_env().database_url == dsn
+
+
+def test_dbconnection_execute_returns_dict_rows(client, auth_settings):
+    """DbConnection.execute().fetchone() returns a plain dict."""
+    client.post("/api/v1/auth/register", json=new_user())
+    from backend.auth.database import connect
+    conn = connect(auth_settings)
+    try:
+        row = conn.execute("SELECT * FROM users WHERE email = %s", ("auditor@example.org",)).fetchone()
+        assert isinstance(row, dict)
+        assert row["email"] == "auditor@example.org"
+        assert row["full_name"] == "Test Auditor"
+    finally:
+        conn.close()
+
+
+def test_is_integrity_error_detects_sqlite_and_psycopg3_exceptions():
+    """_is_integrity_error handles sqlite3.IntegrityError and psycopg 3 integrity exceptions."""
+    import psycopg
+    from backend.auth import repository
+
+    assert repository._is_integrity_error(sqlite3.IntegrityError("UNIQUE constraint failed"))
+    assert repository._is_integrity_error(psycopg.IntegrityError("integrity error"))
+    assert repository._is_integrity_error(psycopg.errors.UniqueViolation("duplicate key value"))
+    assert not repository._is_integrity_error(psycopg.OperationalError("connection lost"))
+    assert not repository._is_integrity_error(ValueError("unrelated error"))
+
+    class RaisingConn:
+        def __init__(self, exc):
+            self._exc = exc
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            return False
+
+        def execute(self, sql, params=()):
+            raise self._exc
+
+    for exc in (psycopg.errors.UniqueViolation("dup"), psycopg.IntegrityError("dup")):
+        with pytest.raises(repository.DuplicateEmailError):
+            repository.create_user(
+                RaisingConn(exc),
+                user_id="usr_1",
+                email="a@example.org",
+                full_name="A",
+                password_hash="h",
+                role="Auditor",
+                created_at="2026-01-01T00:00:00+00:00",
+            )

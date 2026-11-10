@@ -17,8 +17,9 @@ AUTH_SETTINGS = get_auth_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create the SQLite file and tables on first start (safe to repeat).
-    ensure_db(AUTH_SETTINGS.db_path)
+    # Create the database tables on first start (safe to repeat).
+    # Uses PostgreSQL if NIRIKSHAN_DATABASE_URL / AUTH_SETTINGS.database_url is set, otherwise SQLite.
+    ensure_db(AUTH_SETTINGS)
     yield
 
 

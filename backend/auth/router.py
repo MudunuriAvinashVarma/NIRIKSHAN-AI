@@ -16,10 +16,9 @@ Request flow for login (trace):
 from __future__ import annotations
 
 import secrets
-import sqlite3
 import time
 from datetime import datetime, timezone
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -46,7 +45,7 @@ NOT_AUTHENTICATED = "Session expired or invalid. Please re-authenticate."
 
 # ----------------------------------------------------------------- dependencies
 def get_db(settings: Annotated[AuthSettings, Depends(get_auth_settings)]):
-    conn = connect(settings.db_path)
+    conn = connect(settings)
     try:
         yield conn
     finally:
@@ -67,9 +66,9 @@ def verify_origin(request: Request, settings: Annotated[AuthSettings, Depends(ge
 
 def get_current_user(
     request: Request,
-    conn: Annotated[sqlite3.Connection, Depends(get_db)],
+    conn: Annotated[Any, Depends(get_db)],
     settings: Annotated[AuthSettings, Depends(get_auth_settings)],
-) -> sqlite3.Row:
+) -> Any:
     """Reusable later to protect any other route: user=Depends(get_current_user)."""
     token = request.cookies.get(settings.cookie_name)
     user = repository.get_session_user(conn, security.hash_token(token), int(time.time())) if token else None
@@ -78,7 +77,7 @@ def get_current_user(
     return user
 
 
-def _user_out(row: sqlite3.Row) -> UserOut:
+def _user_out(row) -> UserOut:
     return UserOut(
         id=row["id"],
         email=row["email"],
@@ -99,7 +98,7 @@ def _no_store(response: Response) -> None:
     response_model=RegisterResponse,
     dependencies=[Depends(verify_origin)],
 )
-def register(body: RegisterRequest, response: Response, conn: Annotated[sqlite3.Connection, Depends(get_db)]):
+def register(body: RegisterRequest, response: Response, conn: Annotated[Any, Depends(get_db)]):
     _no_store(response)
     duplicate = HTTPException(status_code=400, detail="An account with this email address already exists.")
     if repository.get_user_by_email(conn, body.email) is not None:
@@ -128,7 +127,7 @@ def login(
     body: LoginRequest,
     request: Request,
     response: Response,
-    conn: Annotated[sqlite3.Connection, Depends(get_db)],
+    conn: Annotated[Any, Depends(get_db)],
     settings: Annotated[AuthSettings, Depends(get_auth_settings)],
 ):
     _no_store(response)
@@ -183,7 +182,7 @@ def login(
 
 
 @router.get("/me", response_model=MeResponse)
-def me(response: Response, user: Annotated[sqlite3.Row, Depends(get_current_user)]):
+def me(response: Response, user: Annotated[Any, Depends(get_current_user)]):
     _no_store(response)
     return MeResponse(user=_user_out(user))
 
@@ -192,7 +191,7 @@ def me(response: Response, user: Annotated[sqlite3.Row, Depends(get_current_user
 def logout(
     request: Request,
     response: Response,
-    conn: Annotated[sqlite3.Connection, Depends(get_db)],
+    conn: Annotated[Any, Depends(get_db)],
     settings: Annotated[AuthSettings, Depends(get_auth_settings)],
 ):
     _no_store(response)
