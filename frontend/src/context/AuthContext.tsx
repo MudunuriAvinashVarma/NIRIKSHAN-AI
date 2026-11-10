@@ -5,8 +5,6 @@ import { User, LoginCredentials, RegisterData, AuthContextType } from "@/types/a
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -14,7 +12,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Check current session from HTTP-only cookie on mount
   const checkSession = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+      const res = await fetch("/api/v1/auth/me", {
         method: "GET",
         headers: { "Accept": "application/json" },
         credentials: "include", // Send HTTP-only session cookie
@@ -45,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (credentials: LoginCredentials): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+      const res = await fetch("/api/v1/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -84,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       return {
         success: false,
-        error: "Unable to reach FastAPI backend (http://127.0.0.1:8000). Please ensure the backend server is running.",
+        error: "Unable to reach FastAPI backend. Please ensure the backend server is running.",
       };
     } finally {
       setIsLoading(false);
@@ -95,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (data: RegisterData): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
+      const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -125,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       return {
         success: false,
-        error: "Unable to reach FastAPI backend (http://127.0.0.1:8000). Please ensure the backend server is running.",
+        error: "Unable to reach FastAPI backend. Please ensure the backend server is running.",
       };
     } finally {
       setIsLoading(false);
@@ -135,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Real API logout call
   const logout = async (): Promise<void> => {
     try {
-      await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
+      await fetch("/api/v1/auth/logout", {
         method: "POST",
         credentials: "include",
       });

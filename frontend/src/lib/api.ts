@@ -2,8 +2,6 @@ import { AnomalyApiResponse, AnomalyFilters, AnomalyRecord, AnomalyRecordRaw, He
 import { SAMPLE_ANOMALY_DATA } from "./sample-data";
 import { NATIONAL_METRICS } from "./national-stats";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-
 /**
  * Normalizes raw anomaly records from either FastAPI or static snapshots
  */
@@ -93,7 +91,7 @@ export async function checkBackendHealth(): Promise<{ connected: boolean; data?:
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3500);
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/health`, {
+    const response = await fetch("/api/v1/health", {
       method: "GET",
       headers: { "Accept": "application/json" },
       signal: controller.signal,
@@ -132,7 +130,7 @@ export async function getAnomalies(
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
 
-    const res = await fetch(`${API_BASE_URL}/api/v1/anomalies?${params.toString()}`, {
+    const res = await fetch(`/api/v1/anomalies?${params.toString()}`, {
       method: "GET",
       headers: { "Accept": "application/json" },
       credentials: "include",
