@@ -1,0 +1,22 @@
+﻿services:
+  - type: web
+    name: nirikshan-ai-api
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: NIRIKSHAN_ENV
+        value: production
+      - key: NIRIKSHAN_COOKIE_SECURE
+        value: "true"
+      - key: NIRIKSHAN_COOKIE_SAMESITE
+        value: lax
+      - key: NIRIKSHAN_DATABASE_URL
+        sync: false
+      - key: NIRIKSHAN_CORS_ORIGINS
+        sync: false
